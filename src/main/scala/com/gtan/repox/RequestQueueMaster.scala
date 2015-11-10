@@ -6,7 +6,6 @@ import akka.actor._
 import com.gtan.repox.config.{ConfigFormats, Config}
 import io.undertow.Handlers
 import io.undertow.server.handlers.resource.{FileResourceManager, ResourceManager}
-import play.api.libs.json.Json
 
 import scala.util.Random
 

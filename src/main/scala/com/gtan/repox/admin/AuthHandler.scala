@@ -9,12 +9,12 @@ import com.typesafe.scalalogging.LazyLogging
 import io.undertow.server.HttpServerExchange
 import io.undertow.server.handlers.{CookieImpl, Cookie}
 import io.undertow.util.{Cookies, StatusCodes, Methods}
-import play.api.libs.json.Json
 import akka.pattern.ask
 import concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 import concurrent.ExecutionContext.Implicits.global
+import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
 object AuthHandler extends RestHandler with LazyLogging {
 
@@ -46,7 +46,7 @@ object AuthHandler extends RestHandler with LazyLogging {
       }
     case (Methods.PUT, "password") =>
       val v = exchange.getQueryParameters.get("v").getFirst
-      val json = Json.parse(v)
+      val json = decode(v).
       val (p1, p2) = ((json \ "p1").as[String], (json \ "p2").as[String])
       if (p1 == p2) {
         setConfigAndRespond(exchange, Repox.configPersister ? ModifyPassword(p1))

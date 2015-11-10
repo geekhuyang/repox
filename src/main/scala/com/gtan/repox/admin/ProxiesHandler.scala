@@ -8,10 +8,10 @@ import com.gtan.repox.config.ProxyPersister._
 import com.gtan.repox.data.ProxyServer
 import io.undertow.server.HttpServerExchange
 import io.undertow.util.{HttpString, Methods}
-import play.api.libs.json.Json
 import collection.JavaConverters._
 import akka.pattern.ask
 import concurrent.duration._
+import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
 object ProxiesHandler extends RestHandler {
   implicit val timeout = akka.util.Timeout(5 seconds)
@@ -23,7 +23,7 @@ object ProxiesHandler extends RestHandler {
       respondJson(exchange, Config.proxies)
     case (Methods.POST, "proxy") | (Methods.PUT, "proxy") =>
       val newV = exchange.getQueryParameters.get("v").getFirst
-      val proxy = Json.parse(newV).as[ProxyServer]
+      val proxy = decode[ProxyServer](newV).toOption.get
       setConfigAndRespond(exchange, Repox.configPersister ? NewOrUpdateProxy(proxy))
     case (Methods.PUT, "proxy/enable") =>
       val newV = exchange.getQueryParameters.get("v").getFirst

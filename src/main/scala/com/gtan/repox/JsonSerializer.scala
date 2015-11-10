@@ -6,11 +6,12 @@ import akka.serialization.Serializer
 import com.gtan.repox.ExpirationManager.ExpirationSeq
 import com.gtan.repox.config._
 import com.typesafe.scalalogging.LazyLogging
-import play.api.libs.json._
+import io.circe.{Json, JsonObject}
+import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
 trait SerializationSupport {
-  val reader: JsValue => PartialFunction[String, Jsonable]
-  val writer: PartialFunction[Jsonable, JsValue]
+  val reader: Json => PartialFunction[String, Jsonable]
+  val writer: PartialFunction[Jsonable, Json]
 }
 
 class JsonSerializer extends Serializer with LazyLogging with SerializationSupport {
@@ -18,13 +19,13 @@ class JsonSerializer extends Serializer with LazyLogging with SerializationSuppo
 
   val serializationSupports: Seq[_ <: SerializationSupport] = Seq(RepoPersister, ProxyPersister, ParameterPersister, Immediate404RulePersister, ExpireRulePersister, ConnectorPersister, ExpirationManager, ConfigPersister)
 
-  override val reader: JsValue => PartialFunction[String, Jsonable] = { jsValue =>
+  override val reader: Json => PartialFunction[String, Jsonable] = { jsValue =>
     serializationSupports.map(_.reader(jsValue)).reduce(_ orElse _) orElse {
       case clazzName: String =>
         throw new NotSerializableException(s"No serialization supported for class $clazzName")
     }
   }
-  override val writer: PartialFunction[Jsonable, JsValue] = serializationSupports.map(_.writer).reduce(_ orElse _) orElse {
+  override val writer: PartialFunction[Jsonable, Json] = serializationSupports.map(_.writer).reduce(_ orElse _) orElse {
     case jsonable: Jsonable =>
       throw new NotSerializableException(s"No serialization supported for $jsonable")
   }
@@ -35,49 +36,54 @@ class JsonSerializer extends Serializer with LazyLogging with SerializationSuppo
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = manifest match {
     case None =>
-      Json.parse(new String(bytes, "UTF-8")) match {
-        case obj: JsObject => obj.fields match {
-          case Seq(
-          ("manifest", JsString(ConfigChangedClass)),
-          ("config", config: JsValue),
-          ("cmd", configcmd: JsValue)) =>
-            ConfigChanged(configFromJson(config), jsonableFromJson(configcmd))
-          case _ => jsonableFromJson(obj)
+      import cats.data.Xor._
+      decode[Json](new String(bytes, "UTF-8")) match {
+        case Right(json) => if (json.isObject) {
+          val Some(obj) = json.asObject
+          (obj("manifest"), obj("config"), obj("cmd")) match {
+            case (Some(mani), Some(config), Some(cmd)) if mani.isString =>
+              ConfigChanged(configFromJson(config), jsonableFromJson(cmd))
+            case _ =>
+              throw new NotSerializableException(obj.toString)
+          }
+        } else if (json.isString && json.asString.contains("UserDefault")) {
+          UseDefault
+        } else {
+          jsonableFromJson(json)
         }
-        case JsString("UseDefault") => UseDefault
-        case other => jsonableFromJson(other)
+        case Left(error) =>
+          throw new NotSerializableException(error.getMessage)
       }
     case Some(_) => throw new NotSerializableException("JsonSerializer does not use extra manifest.")
   }
 
-  private def configFromJson(config: JsValue): Config = config.as[Config]
+  private def configFromJson(config: Json): Config =
+    config.as[Config].fold(_ => throw new NotSerializableException(config.toString), identity)
 
-  private def jsonableFromJson(evt: JsValue): Jsonable = evt match {
-    case obj: JsObject => obj.fields match {
-      case Seq(
-      ("manifest", JsString(clazzname)),
-      ("payload", payload: JsValue)) =>
-        reader.apply(payload).apply(clazzname)
-    }
+  private def jsonableFromJson(evt: Json): Jsonable = evt.asObject match {
+    case Some(obj) =>
+      (obj("manifest"), obj("payload")) match {
+        case (Some(mani), Some(payload)) if mani.isString =>
+          reader.apply(payload).apply(mani.asString.get)
+        case _ =>
+          throw new NotSerializableException(evt.toString())
+      }
     case _ => throw new NotSerializableException(evt.toString())
   }
 
-  private def toJson(o: AnyRef): JsValue = o match {
-    case ConfigChanged(config, cmd) =>
-      JsObject(
-        Seq(
-          "manifest" -> JsString(ConfigChangedClass),
-          "config" -> Json.toJson(config),
-          "cmd" -> toJson(cmd)
-        )
+  private def toJson(o: AnyRef): Json = o match {
+    case ConfigChanged(config, jsonable) =>
+      Json.obj(
+        "manifest" -> classOf[ConfigChanged].getName.asJson,
+        "config" -> config.asJson,
+        "cmd" -> toJson(jsonable)
       )
     case jsonable: Jsonable =>
-      val payload = writer.apply(jsonable)
-      JsObject(Seq(
-        "manifest" -> JsString(jsonable.getClass.getName),
-        "payload" -> payload
-      ))
-    case UseDefault => JsString("UseDefault")
+      Json.obj(
+        "manifest" -> jsonable.getClass.getName.asJson,
+        "payload" -> writer.apply(jsonable)
+      )
+    case UseDefault => "UseDefault".asJson
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = toJson(o).toString().getBytes("UTF-8")

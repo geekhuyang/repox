@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.AtomicLong
 
 import com.gtan.repox.Repox
 import com.gtan.repox.config.Config
-import play.api.libs.json.Json
 
 import scala.collection.JavaConverters._
 
@@ -29,7 +28,6 @@ case class Immediate404Rule(id: Option[Long], include: String, exclude: Option[S
 
 object Immediate404Rule {
   lazy val nextId: AtomicLong = new AtomicLong(Config.immediate404Rules.flatMap(_.id).max)
-  implicit val format = Json.format[Immediate404Rule]
 }
 
 case class BlacklistRule(pattern: String, repoName: String)

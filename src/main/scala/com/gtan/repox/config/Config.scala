@@ -6,7 +6,6 @@ import akka.agent.Agent
 import com.gtan.repox.data._
 import com.ning.http.client.{ProxyServer => JProxyServer}
 import com.typesafe.scalalogging.LazyLogging
-import play.api.libs.json.Json
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

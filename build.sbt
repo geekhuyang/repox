@@ -17,6 +17,8 @@ libraryDependencies ++= {
   val ningVer = "1.8.16"
   val protobufVer = "2.6.1"
   val guavaVer = "18.0"
+  val circe = "0.2.0"
+  val jodaTimeVer: String = "2.9"
   Seq(
     "io.undertow" % "undertow-core" % undertowVer,
     ("com.ning" % "async-http-client" % ningVer)
@@ -36,11 +38,13 @@ libraryDependencies ++= {
     "org.iq80.leveldb" % "leveldb" % leveldbVer,
     "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbjniVer,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
-    ("com.typesafe.play" %% "play-json" % playJsonVer)
-      .exclude("org.scala-lang", "scala-library"),
     "com.google.protobuf" % "protobuf-java" % protobufVer,
     "com.google.guava" % "guava" % guavaVer,
-    "org.scalatest" %% "scalatest" % scalaTestVer % "test"
+    "org.scalatest" %% "scalatest" % scalaTestVer % "test",
+    "joda-time" % "joda-time" % jodaTimeVer,
+    "io.circe" %% "circe-core" % circe,
+    "io.circe" %% "circe-generic" % circe,
+    "io.circe" %% "circe-parse" % circe
   )
 }
 

@@ -4,12 +4,14 @@ import akka.actor.{ActorLogging, Cancellable, Props}
 import akka.persistence.SnapshotSelectionCriteria.Latest
 import akka.persistence._
 import com.gtan.repox.config.{Evt, Config, Jsonable}
+import io.circe.Decoder.Result
+import io.circe.Json
 import org.joda.time.DateTime
-import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
 object ExpirationManager extends SerializationSupport {
 
@@ -25,24 +27,20 @@ object ExpirationManager extends SerializationSupport {
 
   case class ExpirationSeq(expirations: Seq[Expiration]) extends Jsonable with Evt
 
-  implicit val expirationFormat = Json.format[Expiration]
-  implicit val expirationPerformedFormat = Json.format[ExpirationPerformed]
-  implicit val expirationSeqFormat = Json.format[ExpirationSeq]
-
   val ExpirationClass = classOf[Expiration].getName
   val ExpirationPerformedClass = classOf[ExpirationPerformed].getName
   val ExpirationSeqClass = classOf[ExpirationSeq].getName
 
-  override val reader: JsValue => PartialFunction[String, Jsonable] = payload => {
-    case ExpirationClass => payload.as[Expiration]
-    case ExpirationPerformedClass => payload.as[ExpirationPerformed]
-    case ExpirationSeqClass => payload.as[ExpirationSeq]
+  override val reader: Json => PartialFunction[String, Jsonable] = payload => {
+    case ExpirationClass => payload.as[Expiration].toOption.get
+    case ExpirationPerformedClass => payload.as[ExpirationPerformed].toOption.get
+    case ExpirationSeqClass => payload.as[ExpirationSeq].toOption.get
   }
 
-  override val writer: PartialFunction[Jsonable, JsValue] = {
-    case o: Expiration => Json.toJson(o)
-    case o: ExpirationPerformed => Json.toJson(o)
-    case o: ExpirationSeq => Json.toJson(o)
+  override val writer: PartialFunction[Jsonable, Json] = {
+    case o: Expiration => o.asJson
+    case o: ExpirationPerformed => o.asJson
+    case o: ExpirationSeq => o.asJson
   }
 }
 

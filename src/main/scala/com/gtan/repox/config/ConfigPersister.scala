@@ -7,13 +7,15 @@ import akka.persistence._
 import com.gtan.repox.config.ConfigPersister.SaveSnapshot
 import com.gtan.repox.{SerializationSupport, Repox, RequestQueueMaster}
 import com.ning.http.client.{AsyncHttpClient, ProxyServer => JProxyServer}
+import io.circe.Json
 import io.undertow.Handlers
 import io.undertow.server.handlers.resource.{FileResourceManager, ResourceManager}
 import io.undertow.util.StatusCodes
-import play.api.libs.json.{Json, JsValue}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
 trait Jsonable
 
@@ -35,12 +37,13 @@ object ConfigPersister extends SerializationSupport {
 
   val ConfigClass = classOf[Config].getName
 
-  override val reader: (JsValue) => PartialFunction[String, Jsonable] = payload => {
-    case ConfigClass => payload.as[Config]
+
+  override val reader: (Json) => PartialFunction[String, Jsonable] = payload => {
+    case ConfigClass => payload.as[Config].toOption.get
   }
 
-  override val writer: PartialFunction[Jsonable, JsValue] = {
-    case o: Config => Json.toJson(o)
+  override val writer: PartialFunction[Jsonable, Json] = {
+    case o: Config => o.asJson
   }
 }
 

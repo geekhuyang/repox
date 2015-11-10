@@ -5,11 +5,11 @@ import java.nio.ByteBuffer
 import com.google.common.base.Charsets
 import com.gtan.repox.Repox
 import com.gtan.repox.config.Config
+import io.circe.Encoder
 import io.undertow.Handlers
 import io.undertow.server.handlers.resource.ClassPathResourceManager
 import io.undertow.server.{HttpHandler, HttpServerExchange}
 import io.undertow.util.{Headers, Methods, StatusCodes}
-import play.api.libs.json.Format
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,11 +51,11 @@ object WebConfigHandler {
 
   def isStaticRequest(target: String) = Set(".html", ".css", ".js", ".ico", ".ttf", ".map", "woff", ".svg", "otf", "png", "jpg", "gif").exists(target.endsWith)
 
-  def respondJson[T: Format](exchange: HttpServerExchange, data: T): Unit = {
+  def respondJson[T: Encoder](exchange: HttpServerExchange, data: T): Unit = {
     exchange.setStatusCode(StatusCodes.OK)
     val respondHeaders = exchange.getResponseHeaders
     respondHeaders.put(Headers.CONTENT_TYPE, "application/json")
-    val json = implicitly[Format[T]].writes(data)
+    val json = implicitly[Encoder[T]].apply(data)
     exchange.getResponseChannel.writeFinal(ByteBuffer.wrap(json.toString().getBytes(Charsets.UTF_8)))
     exchange.endExchange()
   }

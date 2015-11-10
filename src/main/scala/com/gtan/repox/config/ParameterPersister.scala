@@ -5,6 +5,7 @@ import com.gtan.repox.data.DurationFormat
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.duration.Duration
+import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
 
 object ParameterPersister extends SerializationSupport {
@@ -16,8 +17,6 @@ object ParameterPersister extends SerializationSupport {
   }
 
 
-  import DurationFormat._
-  implicit val SetHeadTimeoutFormat = Json.format[SetHeadTimeout]
 
   case class SetHeadRetryTimes(m: Int) extends ConfigCmd {
     override def transform(old: Config) = {
@@ -25,15 +24,11 @@ object ParameterPersister extends SerializationSupport {
     }
   }
 
-  implicit val SetHeadRetryTimesFormat = Json.format[SetHeadRetryTimes]
-
   case class ModifyPassword(newPassword: String) extends ConfigCmd {
     override def transform(old: Config): Config = {
       old.copy(password = newPassword)
     }
   }
-
-  implicit val ModifyPasswordFormat = Json.format[ModifyPassword]
 
   case class SetExtraResources(value: String) extends ConfigCmd {
     override def transform(old: Config): Config = {
@@ -41,23 +36,21 @@ object ParameterPersister extends SerializationSupport {
     }
   }
 
-  implicit val SetExtraResourcesFormat = Json.format[SetExtraResources]
-
   val SetHeadTimeoutClass = classOf[SetHeadTimeout].getName
   val SetHeadRetryTimesClass = classOf[SetHeadRetryTimes].getName
   val ModifyPasswordClass = classOf[ModifyPassword].getName
   val SetExtraResourcesClass = classOf[SetExtraResources].getName
 
-  override val reader: (JsValue) => PartialFunction[String, Jsonable] = payload => {
-    case SetHeadTimeoutClass => payload.as[SetHeadTimeout]
-    case SetHeadRetryTimesClass => payload.as[SetHeadRetryTimes]
-    case ModifyPasswordClass => payload.as[ModifyPassword]
-    case SetExtraResourcesClass => payload.as[SetExtraResources]
+  override val reader: (Json) => PartialFunction[String, Jsonable] = payload => {
+    case SetHeadTimeoutClass => payload.as[SetHeadTimeout].toOption.get
+    case SetHeadRetryTimesClass => payload.as[SetHeadRetryTimes].toOption.get
+    case ModifyPasswordClass => payload.as[ModifyPassword].toOption.get
+    case SetExtraResourcesClass => payload.as[SetExtraResources].toOption.get
   }
-  override val writer: PartialFunction[Jsonable, JsValue] = {
-    case o: SetHeadTimeout => Json.toJson(o)
-    case o: SetHeadRetryTimes => Json.toJson(o)
-    case o: ModifyPassword => Json.toJson(o)
-    case o: SetExtraResources => Json.toJson(o)
+  override val writer: PartialFunction[Jsonable, Json] = {
+    case o: SetHeadTimeout => o.asJson
+    case o: SetHeadRetryTimes => o.asJson
+    case o: ModifyPassword => o.asJson
+    case o: SetExtraResources => o.asJson
   }
 }

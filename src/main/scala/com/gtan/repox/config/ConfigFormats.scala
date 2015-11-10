@@ -1,9 +1,9 @@
 package com.gtan.repox.config
 
 import com.gtan.repox.data.{Connector, ProxyServer, Repo}
-import play.api.libs.json._
 
 trait ConfigFormats {
+/*
   implicit val connectorUsageFormat = new Format[Map[Repo, Connector]] {
     override def writes(o: Map[Repo, Connector]) = JsArray(o.map {
       case (repo, connector) => JsObject(
@@ -65,5 +65,6 @@ trait ConfigFormats {
   import com.gtan.repox.data.DurationFormat._
 
   implicit val format = Json.format[Config]
+*/
 
 }
