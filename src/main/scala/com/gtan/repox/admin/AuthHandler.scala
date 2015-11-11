@@ -46,10 +46,17 @@ object AuthHandler extends RestHandler with LazyLogging {
       }
     case (Methods.PUT, "password") =>
       val v = exchange.getQueryParameters.get("v").getFirst
-      val json = decode(v).
-      val (p1, p2) = ((json \ "p1").as[String], (json \ "p2").as[String])
-      if (p1 == p2) {
-        setConfigAndRespond(exchange, Repox.configPersister ? ModifyPassword(p1))
+      decode[Map[String, String]](v).toOption.fold[Unit](exchange.setStatusCode(StatusCodes.BAD_REQUEST).endExchange()) { map =>
+        (map.get("p1"), map.get("p2")) match {
+          case (Some(p1), Some(p2)) =>
+            if (p1 == p2) {
+              setConfigAndRespond(exchange, Repox.configPersister ? ModifyPassword(p1))
+            } else {
+              exchange.setStatusCode(StatusCodes.BAD_REQUEST).endExchange()
+            }
+          case _ =>
+            exchange.setStatusCode(StatusCodes.BAD_REQUEST).endExchange()
+        }
       }
   }
 }

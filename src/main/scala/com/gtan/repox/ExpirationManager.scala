@@ -25,6 +25,7 @@ object ExpirationManager extends SerializationSupport {
 
   case class Expiration(uri: String, timestamp: DateTime) extends Jsonable with Evt
 
+  implicit val ExpirationCodec: CodecJson[Expiration[ =
   case class ExpirationSeq(expirations: Seq[Expiration]) extends Jsonable with Evt
 
   val ExpirationClass = classOf[Expiration].getName
