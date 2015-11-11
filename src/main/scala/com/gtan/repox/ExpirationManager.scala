@@ -1,19 +1,20 @@
 package com.gtan.repox
 
+import java.time.Instant
+
 import akka.actor.{ActorLogging, Cancellable, Props}
 import akka.persistence.SnapshotSelectionCriteria.Latest
 import akka.persistence._
 import com.gtan.repox.config.{Evt, Config, Jsonable}
 import io.circe.Decoder.Result
 import io.circe.Json
-import org.joda.time.{Duration => _, _}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
 import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
-object ExpirationManager extends SerializationSupport {
+object ExpirationManager extends SerializationSupport with Codecs{
 
   case class CreateExpiration(uri: String, duration: Duration)
 
@@ -23,15 +24,8 @@ object ExpirationManager extends SerializationSupport {
 
   case class ExpirationPerformed(uri: String) extends Jsonable with Evt
 
-  case class Expiration(uri: String, timestamp: DateTime) extends Jsonable with Evt
+  case class Expiration(uri: String, timestamp: Instant) extends Jsonable with Evt
 
-  implicit val DateTimeEncoder: Encoder[DateTime] = new Encoder[DateTime] {
-    override def apply(a: DateTime): Json = a.getMillis.asJson
-  }
-
-  implicit val DateTimeDecoder: Decoder[DateTime] = new Decoder[DateTime] {
-    override def apply(c: HCursor): Result[DateTime] = c.top.as[Long].map(l => new DateTime(l))
-  }
 
   case class ExpirationSeq(expirations: Seq[Expiration]) extends Jsonable with Evt
 
@@ -72,8 +66,8 @@ class ExpirationManager extends PersistentActor with ActorLogging {
   var unperformed: ExpirationSeq = ExpirationSeq(Vector.empty)
 
   def scheduleFileDelete(expiration: Expiration): Unit = {
-    if (expiration.timestamp.isAfterNow) {
-      val delay: Long = expiration.timestamp.getMillis - DateTime.now().getMillis
+    if (expiration.timestamp.isAfter(Instant.now)) {
+      val delay: Long = expiration.timestamp.toEpochMilli - Instant.now().toEpochMilli
       log.debug(s"Schedule expiration for ${expiration.uri} at ${expiration.timestamp} in $delay ms")
       val cancellable = Repox.system.scheduler.scheduleOnce(
                                                              delay.millis,
@@ -112,7 +106,7 @@ class ExpirationManager extends PersistentActor with ActorLogging {
   override def receiveCommand: Receive = {
     case CreateExpiration(uri, duration) =>
       if (!scheduledExpirations.exists(_._1.uri == uri)) {
-        val timestamp = DateTime.now().plusMillis(duration.toMillis.toInt)
+        val timestamp = Instant.now.plusMillis(duration.toMillis.toInt)
         val expiration = Expiration(uri, timestamp)
         persist(expiration) { _ => }
         unperformed = unperformed.copy(expirations = unperformed.expirations :+ expiration)

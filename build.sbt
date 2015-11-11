@@ -41,7 +41,6 @@ libraryDependencies ++= {
     "com.google.protobuf" % "protobuf-java" % protobufVer,
     "com.google.guava" % "guava" % guavaVer,
     "org.scalatest" %% "scalatest" % scalaTestVer % "test",
-    "joda-time" % "joda-time" % jodaTimeVer,
     "io.circe" %% "circe-core" % circe,
     "io.circe" %% "circe-generic" % circe,
     "io.circe" %% "circe-parse" % circe

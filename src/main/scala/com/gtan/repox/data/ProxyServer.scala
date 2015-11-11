@@ -19,11 +19,4 @@ case class ProxyServer(id: Option[Long], name: String, protocol: JProxyServer.Pr
 object ProxyServer {
   lazy val nextId: AtomicLong = new AtomicLong(Config.proxies.flatMap(_.id).max)
 
-  implicit val protocolDecoder = new Decoder[JProxyServer.Protocol] {
-    override def apply(c: HCursor): Result[Protocol] = c.top.as[String].map(JProxyServer.Protocol.valueOf)
-  }
-
-  implicit  val protocolEncoder = new Encoder[JProxyServer.Protocol] {
-    override def apply(a: Protocol): Json = a.name.asJson
-  }
 }

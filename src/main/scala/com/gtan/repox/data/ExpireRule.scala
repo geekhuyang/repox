@@ -13,5 +13,5 @@ case class ExpireRule(id: Option[Long], pattern: String, duration: Duration, dis
 
 object ExpireRule {
   lazy val nextId: AtomicLong = new AtomicLong(Config.expireRules.flatMap(_.id).max)
-  import DurationFormat._
+
 }

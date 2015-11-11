@@ -1,7 +1,6 @@
 package com.gtan.repox.config
 
 import com.gtan.repox.SerializationSupport
-import com.gtan.repox.data.DurationFormat
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.duration.Duration

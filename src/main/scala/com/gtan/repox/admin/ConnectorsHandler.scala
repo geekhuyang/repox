@@ -3,7 +3,7 @@ package com.gtan.repox.admin
 import java.net.URLDecoder
 
 import akka.pattern.ask
-import com.gtan.repox.Repox
+import com.gtan.repox.{Codecs, Repox}
 import com.gtan.repox.config.{Config, ConfigPersister}
 import com.gtan.repox.data.Connector
 import io.circe.Json
@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
-object ConnectorsHandler extends RestHandler {
+object ConnectorsHandler extends RestHandler with Codecs{
 
   import com.gtan.repox.admin.WebConfigHandler._
   import com.gtan.repox.config.ConnectorPersister._

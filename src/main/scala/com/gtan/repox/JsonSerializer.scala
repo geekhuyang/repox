@@ -13,7 +13,7 @@ trait SerializationSupport {
   val writer: PartialFunction[Jsonable, Json]
 }
 
-class JsonSerializer extends Serializer with LazyLogging with SerializationSupport {
+class JsonSerializer extends Serializer with LazyLogging with SerializationSupport with Codecs {
   val ConfigChangedClass = classOf[ConfigChanged].getName
 
   val serializationSupports: Seq[_ <: SerializationSupport] = Seq(RepoPersister, ProxyPersister, ParameterPersister, Immediate404RulePersister, ExpireRulePersister, ConnectorPersister, ExpirationManager, ConfigPersister)
@@ -55,7 +55,7 @@ class JsonSerializer extends Serializer with LazyLogging with SerializationSuppo
   }
 
   private def configFromJson(config: Json): Config =
-    config.as[Config].fold(_ => throw new NotSerializableException(config.toString), identity)
+    config.as[Config].getOrElse(throw new NotSerializableException(config.toString))
 
   private def jsonableFromJson(evt: Json): Jsonable = evt.asObject match {
     case Some(obj) =>

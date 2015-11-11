@@ -2,6 +2,7 @@ package com.gtan.repox.admin
 
 import com.gtan.repox.config.Config
 import com.gtan.repox.data.{Connector, ProxyServer}
+import ProxyServer._
 
 case class ConnectorVO(connector: Connector, proxy: Option[ProxyServer]) {
 }

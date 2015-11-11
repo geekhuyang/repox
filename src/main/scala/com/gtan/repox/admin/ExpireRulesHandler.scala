@@ -2,7 +2,7 @@ package com.gtan.repox.admin
 
 import java.net.URLDecoder
 
-import com.gtan.repox.Repox
+import com.gtan.repox.{Codecs, Repox}
 import com.gtan.repox.config.Config
 import com.gtan.repox.data.ExpireRule
 import io.undertow.server.HttpServerExchange
@@ -14,7 +14,7 @@ import com.gtan.repox.config.ExpireRulePersister._
 import collection.JavaConverters._
 import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
-object ExpireRulesHandler extends RestHandler {
+object ExpireRulesHandler extends RestHandler with Codecs {
   implicit val timeout = akka.util.Timeout(5 seconds)
 
   import com.gtan.repox.admin.WebConfigHandler._

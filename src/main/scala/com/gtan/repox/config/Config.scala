@@ -3,6 +3,7 @@ package com.gtan.repox.config
 import java.nio.file.Paths
 
 import akka.agent.Agent
+import com.gtan.repox.Codecs
 import com.gtan.repox.data._
 import com.ning.http.client.{ProxyServer => JProxyServer}
 import com.typesafe.scalalogging.LazyLogging
@@ -25,7 +26,8 @@ case class Config(proxies: Seq[ProxyServer],
                   password: String,
                   extraResources: Seq[String]) extends Jsonable
 
-object Config extends LazyLogging with ConfigFormats {
+
+object Config extends LazyLogging with Codecs {
 
   val defaultProxies = List(
     ProxyServer(id = Some(1), name = "Lantern", protocol = JProxyServer.Protocol.HTTP, host = "localhost", port = 8787)
