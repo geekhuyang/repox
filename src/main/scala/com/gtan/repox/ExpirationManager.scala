@@ -6,7 +6,7 @@ import akka.persistence._
 import com.gtan.repox.config.{Evt, Config, Jsonable}
 import io.circe.Decoder.Result
 import io.circe.Json
-import org.joda.time.DateTime
+import org.joda.time.{Duration => _, _}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -25,7 +25,14 @@ object ExpirationManager extends SerializationSupport {
 
   case class Expiration(uri: String, timestamp: DateTime) extends Jsonable with Evt
 
-  implicit val ExpirationCodec: CodecJson[Expiration[ =
+  implicit val DateTimeEncoder: Encoder[DateTime] = new Encoder[DateTime] {
+    override def apply(a: DateTime): Json = a.getMillis.asJson
+  }
+
+  implicit val DateTimeDecoder: Decoder[DateTime] = new Decoder[DateTime] {
+    override def apply(c: HCursor): Result[DateTime] = c.top.as[Long].map(l => new DateTime(l))
+  }
+
   case class ExpirationSeq(expirations: Seq[Expiration]) extends Jsonable with Evt
 
   val ExpirationClass = classOf[Expiration].getName

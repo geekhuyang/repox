@@ -1,19 +1,16 @@
 package com.gtan.repox.data
 
-import play.api.libs.json._
-
 import scala.concurrent.duration.Duration
+import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
+import Decoder.Result
 
 object DurationFormat {
-  implicit val durationFormat = new Format[Duration] {
-    override def reads(json: JsValue) = json match {
-      case JsString(str) =>
-        JsSuccess(Duration(str))
-      case _ =>
-        JsError("duration json format need string")
-    }
+  implicit val durationDecoder = new Decoder[Duration] {
+    override def apply(c: HCursor): Result[Duration] = c.top.as[String].map(Duration.apply)
+  }
 
-    override def writes(o: Duration) = JsString(o.toString)
+  implicit val durationEncoder = new Encoder[Duration] {
+    override def apply(a: Duration): Json = a.toString.asJson
   }
 
 }

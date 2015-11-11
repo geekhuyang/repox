@@ -6,7 +6,6 @@ import akka.serialization.Serializer
 import com.gtan.repox.ExpirationManager.ExpirationSeq
 import com.gtan.repox.config._
 import com.typesafe.scalalogging.LazyLogging
-import io.circe.{Json, JsonObject}
 import io.circe._, io.circe.generic.auto._, io.circe.parse._, io.circe.syntax._
 
 trait SerializationSupport {
@@ -38,19 +37,17 @@ class JsonSerializer extends Serializer with LazyLogging with SerializationSuppo
     case None =>
       import cats.data.Xor._
       decode[Json](new String(bytes, "UTF-8")) match {
-        case Right(json) => if (json.isObject) {
-          val Some(obj) = json.asObject
-          (obj("manifest"), obj("config"), obj("cmd")) match {
-            case (Some(mani), Some(config), Some(cmd)) if mani.isString =>
-              ConfigChanged(configFromJson(config), jsonableFromJson(cmd))
-            case _ =>
-              throw new NotSerializableException(obj.toString)
-          }
-        } else if (json.isString && json.asString.contains("UserDefault")) {
-          UseDefault
-        } else {
-          jsonableFromJson(json)
-        }
+        case Right(json) =>
+          json.asObject.map { obj =>
+            (obj("manifest"), obj("config"), obj("cmd")) match {
+              case (Some(mani), Some(config), Some(cmd)) if mani.isString =>
+                ConfigChanged(configFromJson(config), jsonableFromJson(cmd))
+              case _ =>
+                throw new NotSerializableException(obj.toString)
+            }
+          }.orElse(json.asString filter (_ == "UseDefault") map (_ => UseDefault))
+            .getOrElse(jsonableFromJson(json))
+
         case Left(error) =>
           throw new NotSerializableException(error.getMessage)
       }
