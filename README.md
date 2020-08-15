@@ -1,10 +1,8 @@
-:exclamation: 公服 2016 年 2 月 27 日重新上线. 旧版的 async-http-client 中有 bug 导致无法正确处理 typesafe repository 中的重定向链接, 所以建议所有在本地或组织内运行 Repox 的童鞋立即升级至最新版本.
+:exclamation: 第一个 2.12 版发布，assembly 包减小了近 5M（11.8%）
 
-:exclamation: ibiblio 镜像近来改变策略，如果请求的artifact在镜像中不存在，最新的行为是返回状态码 200，内容是镜像首页列表（旧的行为，也是更正确的行为是返回状态码 404）。由于这一改变，使ibiblio镜像完全不适合作为 repox 上游仓库。建议禁用。建议用 central 替代.
+:exclamation: 2016年5月27日，Repox 公服出口带宽升至2M
 
-:exclamation: 广谈公服没有配置任何SNAPSHOT或nightly仓库, 因此所有SNAPSHOT/nightly artifacts都会404.
-
-:exclamation: twitter 的项目很多依赖仅在twitter自己的仓库中托管, 由于 GFW, 广谈公服无法连接此仓库, 因此无法解析这些依赖.
+:exclamation: Repox 公服正式迁移至阿里云, 名称由 "广谈公服" 改为 "社区公服". 正在募捐, [查看详情](http://centaur.github.io/repox/)
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Centaur/repox?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -75,6 +73,13 @@ Repox的主要目标是改善sbt解决依赖的速度，但由于它的服务方
 * 可设置全面禁止javadoc包的下载
 
 更多的细节请参阅其它Wiki页。
+
+### 社区公服 404 了怎么办
+现在越来越多的 artifact 没有被放进 maven 中央仓库, 而是零散地托管在一些小众仓库中。如果社区公服中没有将这样的小众仓库添加为上游仓库, 会导致404.
+这时候你可以临时将 `sbt.override.build.repos` 设置为 `false`, 待依赖解析下载完成后恢复成 `true`; 或者选择一种方式申请向社区公服添加上游仓库:
+
+* 到 github 上提交 issue
+* 发邮件给 43284683 AT qq.com
 
 ### Repox的优势
 * 轻

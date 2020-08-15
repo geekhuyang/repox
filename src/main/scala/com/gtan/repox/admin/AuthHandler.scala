@@ -4,7 +4,6 @@ import java.io.IOException
 import java.nio.charset.Charset
 import java.util.Date
 
-import com.google.common.base.Charsets
 import com.gtan.repox.Repox
 import com.gtan.repox.config.ConfigPersister.SaveSnapshot
 import com.gtan.repox.config._
@@ -51,6 +50,11 @@ object AuthHandler extends RestHandler with LazyLogging with ConfigFormats {
         exchange.getRequestCookies.remove("authenticated")
         exchange.getResponseChannel
         exchange.endExchange()
+      case (Methods.GET, "exportConfig") =>
+        exchange.setStatusCode(StatusCodes.OK)
+        exchange.getResponseHeaders.add(Headers.CONTENT_TYPE, "application/force-download")
+        exchange.getResponseHeaders.add(Headers.CONTENT_DISPOSITION, """attachment; filename="repox.config.json""")
+        exchange.getResponseSender.send(Json.toJson(Config.get.copy(password = "not exported")).toString)
     }
     val needAuth: PartialFunction[(HttpString, String), Unit] = {
       case _ if !authenticated(exchange) =>
@@ -63,16 +67,11 @@ object AuthHandler extends RestHandler with LazyLogging with ConfigFormats {
           result =>
             exchange.getResponseSender.send( s"""{"success": ${result.isSuccess}}""")
         }
-      case (Methods.GET, "exportConfig") =>
-        exchange.setStatusCode(StatusCodes.OK)
-        exchange.getResponseHeaders.add(Headers.CONTENT_TYPE, "application/force-download")
-        exchange.getResponseHeaders.add(Headers.CONTENT_DISPOSITION, """attachment; filename="repox.config.json""")
-        exchange.getResponseSender.send(Json.toJson(Config.get.copy(password = "not exported")).toString)
       case (Methods.PUT, "importConfig") =>
         val contentType = exchange.getRequestHeaders.getFirst(Headers.CONTENT_TYPE)
         if (contentType.startsWith("application/json")) {
           val splitted = contentType.split("charset=")
-          val charset = if(splitted.length == 2) Charset.forName(splitted(1)) else Charsets.UTF_8
+          val charset = if(splitted.length == 2) Charset.forName(splitted(1)) else Charset.forName("UTF-8")
           exchange.getRequestReceiver.receiveFullString(
             new FullStringCallback {
               override def handle(exchange: HttpServerExchange, message: String): Unit = {

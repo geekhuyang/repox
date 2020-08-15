@@ -86,22 +86,36 @@ class RequestQueueMaster extends Actor with Stash with ActorLogging with ConfigF
       quarantined.get(uri) match {
         case None =>
           val queue = Queue('get, uri)
-          Repox.downloaded(uri) match {
-            case Some(Tuple2(resourceManager, resourceHandler)) =>
-              Repox.immediateFile(resourceHandler, exchange)
-              for (worker <- children.get(queue)) {
-                worker ! PoisonPill
-              }
-            case None =>
-              children.get(queue) match {
+          if (Config.immediate404Rules.filterNot(_.disabled).exists(_.matches(uri))) {
+            Repox.immediate404(exchange)
+            for (worker <- children.get(queue)) {
+              worker ! PoisonPill
+            }
+          } else {
+            for (peers <- Repox.peer(uri)) {
+              peers.find(p => Repox.downloaded(p).isDefined) match {
+                case Some(peer) =>
+                  Repox.smart404(exchange)
                 case None =>
-                  val childName = s"GetQueueWorker_${Repox.nextId}"
-                  val worker = context.actorOf(Props(classOf[GetQueueWorker], uri), name = childName)
-                  children = children.updated(Queue('get, uri), worker)
-                  worker ! req
-                case Some(worker) =>
-                  worker ! req
+                  Repox.downloaded(uri) match {
+                    case Some(Tuple2(resourceManager, resourceHandler)) =>
+                      Repox.immediateFile(resourceHandler, exchange)
+                      for (worker <- children.get(queue)) {
+                        worker ! PoisonPill
+                      }
+                    case None =>
+                      children.get(queue) match {
+                        case None =>
+                          val childName = s"GetQueueWorker_${Repox.nextId}"
+                          val worker = context.actorOf(Props(classOf[GetQueueWorker], uri), name = childName)
+                          children = children.updated(Queue('get, uri), worker)
+                          worker ! req
+                        case Some(worker) =>
+                          worker ! req
+                      }
+                  }
               }
+            }
           }
         case Some(deleter) =>
           // file quarantined, 404

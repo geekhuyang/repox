@@ -2,53 +2,57 @@ name := "repox"
 
 organization := "com.gtan"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.6"
 
-val akkaVersion = "2.4.2"
+val akkaVersion = "2.5.14"
 
 libraryDependencies ++= {
-  val undertowVer = "1.3.17.Final"
-  val logbackVer = "1.1.3"
+  val undertowVer = "2.0.11.Final"
+  val logbackVer = "1.2.3"
   val leveldbVer = "0.7"
   val leveldbjniVer = "1.8"
-  val scalaTestVer = "2.2.5"
-  val playJsonVer = "2.4.6"
-  val scalaLoggingVer = "3.1.0"
-  val ningVer = "1.9.33"
-  val protobufVer = "2.6.1"
-  val guavaVer = "19.0"
+  val scalaTestVer = "3.0.5"
+  val playJsonVer = "2.6.7"
+  val scalaLoggingVer = "3.9.0"
+  val ningVer = "1.9.40"
+  val protobufVer = "3.6.1"
   Seq(
     "io.undertow" % "undertow-core" % undertowVer,
     ("com.ning" % "async-http-client" % ningVer)
       .exclude("org.slf4j", "slf4j-api"),
     ("com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVer)
-      .exclude("org.scala-lang", "scala-library"),
+      .exclude("org.scala-lang", "scala-library")
+      .exclude("org.scala-lang", "scala-reflect"),
     ("ch.qos.logback" % "logback-classic" % logbackVer)
       .exclude("org.slf4j", "slf4j-api"),
     ("com.typesafe.akka" %% "akka-actor" % akkaVersion)
+      .exclude("org.scala-lang", "scala-library")
       .exclude("org.slf4j", "slf4j-api"),
     ("com.typesafe.akka" %% "akka-slf4j" % akkaVersion)
+      .exclude("org.scala-lang", "scala-library")
       .exclude("org.slf4j", "slf4j-api"),
     ("com.typesafe.akka" %% "akka-agent" % akkaVersion)
       .exclude("org.scala-lang", "scala-library"),
     ("com.typesafe.akka" %% "akka-persistence" % akkaVersion)
       .exclude("org.scala-lang", "scala-library"),
-    "org.iq80.leveldb" % "leveldb" % leveldbVer,
+    ("org.iq80.leveldb" % "leveldb" % leveldbVer)
+      .exclude("com.google.guava", "guava"),
     "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbjniVer,
-    "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
+    ("com.typesafe.akka" %% "akka-persistence-query" % akkaVersion)
+      .exclude("org.scala-lang", "scala-library")
+      .exclude("com.typesafe", "config")
+      .exclude("com.typesafe", "ssl-config-akka_2.12")
+      .exclude("com.typesafe.akka", "akka-testkit_2.12")
+      .exclude("com.typesafe.akka", "akka-stream-testkit_2.12"),
     ("com.typesafe.play" %% "play-json" % playJsonVer)
       .exclude("org.scala-lang", "scala-library"),
     "com.google.protobuf" % "protobuf-java" % protobufVer,
-    "com.google.guava" % "guava" % guavaVer,
     "org.scalatest" %% "scalatest" % scalaTestVer % "test"
   )
 }
 
-// to use repox, this option must be false, or when retry updateClassifiers, it will not download srcs
-//updateOptions := updateOptions.value.withCachedResolution(false)
-
 transitiveClassifiers := Seq("sources")
-
+updateOptions := updateOptions.value.withGigahorse(false)
 scalacOptions ++= Seq(
                        "-feature",
                        "-deprecation",
@@ -69,7 +73,7 @@ assemblyMergeStrategy in assembly := {
     case Seq("jquery", "dist", "jquery.min.js") => MergeStrategy.deduplicate
     case Seq("semantic-ui", "dist", "semantic.min.css") => MergeStrategy.deduplicate
     case Seq("semantic-ui", "dist", "semantic.min.js") => MergeStrategy.deduplicate
-    case Seq("semantic-ui", "dist", "themes", "default", "assets", all@_*) => MergeStrategy.deduplicate
+    case Seq("semantic-ui", "dist", "themes", "default", "assets", _*) => MergeStrategy.deduplicate
     case _ => MergeStrategy.discard
   }
   case x =>
@@ -77,3 +81,5 @@ assemblyMergeStrategy in assembly := {
 }
 
 mainClass in assembly := Some("com.gtan.repox.Main")
+
+test in assembly := {}

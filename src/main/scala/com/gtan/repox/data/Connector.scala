@@ -30,6 +30,7 @@ case class Connector(id: Option[Long],
   def createClient = {
     val configBuilder = new AsyncHttpClientConfig.Builder()
       .setRequestTimeout(Int.MaxValue)
+      .setReadTimeout(connectionIdleTimeout.toMillis.toInt)
       .setConnectTimeout(connectionTimeout.toMillis.toInt)
       .setPooledConnectionIdleTimeout(connectionIdleTimeout.toMillis.toInt)
       .setAllowPoolingConnections(true)
@@ -37,17 +38,18 @@ case class Connector(id: Option[Long],
       .setMaxConnectionsPerHost(maxConnections)
       .setMaxConnections(maxConnectionsPerHost)
       .setFollowRedirect(true)
-    val withCredentials = this.credentials.fold(configBuilder) { x => configBuilder.setRealm(x.toJava)}
-    val builder = Config.proxyUsage.get(this).fold(withCredentials) { x => withCredentials.setProxyServer(x.toJava)}
+    val withCredentials = this.credentials.fold(configBuilder) { x => configBuilder.setRealm(x.toJava) }
+    val builder = Config.proxyUsage.get(this).fold(withCredentials) { x => withCredentials.setProxyServer(x.toJava) }
 
     new AsyncHttpClient(builder.build())
   }
 }
 
 object Connector {
-  lazy val nextId: AtomicLong = new AtomicLong(Config.connectors.flatMap(_.id).max)
+  lazy val nextId: AtomicLong = new AtomicLong(Config.connectors.flatMap(_.id).reduceOption[Long](math.max).getOrElse(1L))
 
   import DurationFormat._
+
   implicit val realmFormat = Json.format[Realm]
   implicit val format = Json.format[Connector]
 }
